@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>汉语词卡 · Chinese Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f0eb;
+    --card-bg: #ffffff;
+    --primary: #c0392b;
+    --primary-light: #e74c3c;
+    --accent: #2980b9;
+    --text-dark: #2c3e50;
+    --text-mid: #555;
+    --text-light: #888;
+    --border: #ddd;
+    --radius: 18px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.13);
+    --t1: #888888;
+    --t2: #27ae60;
+    --t3: #2980b9;
+    --t4: #c0392b;
+    --t5: #999;
+  }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .topbar {
+    width: 100%; max-width: 760px;
+    padding: 12px 18px 8px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+    align-items: center; justify-content: space-between;
+  }
+  .topbar-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  select, .btn-sm {
+    border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; font-size: 14px;
+    background: #fff; color: var(--text-dark);
+    cursor: pointer; outline: none; transition: border-color .2s;
+  }
+  select:focus, .btn-sm:focus { border-color: var(--primary); }
+  .btn-sm { font-weight: 600; }
+  .btn-sm:hover { background: #f0f0f0; }
+  .btn-sm.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .main-mode-toggle {
+    display: flex; background: #2c3e50; border-radius: 22px;
+    padding: 3px; gap: 2px;
+  }
+  .main-mode-toggle button {
+    border: none; border-radius: 19px; padding: 6px 16px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    background: transparent; color: rgba(255,255,255,0.6); transition: all .2s;
+  }
+  .main-mode-toggle button.on {
+    background: #fff; color: var(--primary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .mode-toggle {
+    display: flex; background: #e8e8e8; border-radius: 20px;
+    padding: 3px; gap: 2px;
+  }
+  .mode-toggle button {
+    border: none; border-radius: 17px; padding: 5px 14px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--text-mid); transition: all .2s;
+  }
+  .mode-toggle button.on {
+    background: #fff; color: var(--primary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  }
+  .progress-wrap { width: 100%; max-width: 760px; padding: 0 18px 8px; }
+  .progress-bar-bg { height: 6px; background: #ddd; border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 3px; transition: width .4s ease;
+  }
+  .progress-text { font-size: 13px; color: var(--text-light); margin-top: 4px; text-align: right; }
+  .card-scene {
+    width: 100%; max-width: 760px; padding: 0 18px;
+    perspective: 1200px; cursor: pointer; user-select: none; margin-top: 8px;
+  }
+  .card-wrapper {
+    position: relative; width: 100%; padding-top: 58%;
+    transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(.4,0,.2,1);
+  }
+  .card-wrapper.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .card-back { transform: rotateY(180deg); }
+  .card-hanzi {
+    font-size: clamp(72px, 16vw, 130px); font-weight: 700;
+    color: var(--text-dark); letter-spacing: 6px; line-height: 1.1; text-align: center;
+  }
+  .card-pinyin {
+    font-family: "Andika", "Noto Sans SC", sans-serif;
+    font-size: clamp(30px, 7vw, 54px); margin-top: 10px;
+    letter-spacing: 3px; text-align: center; line-height: 1.4;
+  }
+  .card-meaning {
+    font-family: "Noto Sans Thai", "Noto Sans SC", sans-serif;
+    font-size: clamp(16px, 3.5vw, 26px);
+    color: #7f5af0; margin-top: 14px; text-align: center; font-weight: 500;
+  }
+  .card-example {
+    font-size: clamp(14px, 2.8vw, 20px); color: #555;
+    margin-top: 12px; text-align: center; line-height: 1.5; padding: 0 8px;
+  }
+  .card-example-label { font-size: clamp(11px, 2.2vw, 15px); color: #999; margin-right: 4px; }
+  .card-tap-hint { font-size: 13px; color: #bbb; margin-top: 14px; }
+  .t1 { color: var(--t1); } .t2 { color: var(--t2); } .t3 { color: var(--t3); } .t4 { color: var(--t4); } .t5 { color: var(--t5); }
+  .controls {
+    width: 100%; max-width: 760px; padding: 14px 18px 0;
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .btn-nav {
+    border: none; border-radius: 50px; padding: 12px 28px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: all .18s; color: #fff; min-width: 90px;
+  }
+  .btn-nav:active { transform: scale(.95); }
+  .btn-prev { background: #95a5a6; } .btn-prev:hover { background: #7f8c8d; }
+  .btn-next { background: var(--accent); } .btn-next:hover { background: #1a6a9a; }
+  .btn-flip { background: var(--primary); flex: 1; max-width: 200px; }
+  .btn-flip:hover { background: var(--primary-light); }
+  .self-eval {
+    width: 100%; max-width: 760px; padding: 12px 18px 0;
+    display: flex; gap: 10px; justify-content: center;
+  }
+  .self-eval button {
+    flex: 1; max-width: 160px; border: none; border-radius: 50px;
+    padding: 11px 0; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .18s; color: #fff;
+  }
+  .self-eval button:active { transform: scale(.95); }
+  .btn-know { background: #27ae60; } .btn-know:hover { background: #219a52; }
+  .btn-fuzzy { background: #e67e22; } .btn-fuzzy:hover { background: #ca6a12; }
+  .btn-dontknow { background: #c0392b; } .btn-dontknow:hover { background: #a93226; }
+  .stats {
+    width: 100%; max-width: 760px; padding: 12px 18px;
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  }
+  .stat-item { text-align: center; min-width: 60px; }
+  .stat-num { font-size: 22px; font-weight: 700; }
+  .stat-label { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+  .stat-know .stat-num { color: #27ae60; }
+  .stat-fuzzy .stat-num { color: #e67e22; }
+  .stat-dontknow .stat-num { color: #c0392b; }
+  .stat-remain .stat-num { color: var(--accent); }
+  .done-banner {
+    width: 100%; max-width: 760px; margin: 20px 18px 0;
+    background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 36px 24px; text-align: center; display: none;
+  }
+  .done-banner h2 { font-size: 28px; color: var(--primary); }
+  .done-banner p { color: var(--text-mid); margin-top: 10px; font-size: 16px; }
+  .btn-restart {
+    margin-top: 20px; border: none; border-radius: 50px;
+    padding: 13px 40px; font-size: 16px; font-weight: 700;
+    background: var(--primary); color: #fff; cursor: pointer;
+  }
+  .btn-restart:hover { background: var(--primary-light); }
+  #matchArea, #dictArea { width: 100%; max-width: 760px; padding: 0 18px; display: none; }
+  .match-toolbar, .dict-toolbar {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 12px; padding: 10px 14px; background: #fff;
+    border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+  .match-toolbar label, .dict-toolbar label { font-size: 13px; color: var(--text-mid); font-weight: 600; }
+  .match-toolbar select, .dict-toolbar select { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+  .match-timer, .dict-timer {
+    margin-left: auto; font-size: 18px; font-weight: 700;
+    color: var(--accent); min-width: 56px; text-align: right;
+  }
+  .match-score, .dict-score { display: flex; gap: 14px; font-size: 13px; font-weight: 600; }
+  .match-score .sc-ok, .dict-score .sc-ok { color: #27ae60; }
+  .match-score .sc-err, .dict-score .sc-err { color: #c0392b; }
+  .match-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .match-col { display: flex; flex-direction: column; gap: 8px; }
+  .match-card {
+    background: #fff; border: 2.5px solid var(--border); border-radius: 12px;
+    padding: 12px 10px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s, transform .1s;
+    min-height: 60px; display: flex; align-items: center; justify-content: center;
+    word-break: break-all; user-select: none;
+  }
+  .match-card:hover:not(.matched):not(.disabled) { border-color: var(--accent); background: #f0f7ff; }
+  .match-card.selected { border-color: var(--accent); background: #dbeeff; transform: scale(1.03); }
+  .match-card.matched { border-color: #27ae60; background: #eafaf1; color: #27ae60; cursor: default; opacity: 0.75; }
+  .match-card.error { border-color: #c0392b; background: #fdecea; animation: shake .35s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+  .match-card.disabled { cursor: default; }
+  .match-hz { font-size: clamp(22px, 5vw, 34px); font-weight: 700; color: var(--text-dark); letter-spacing: 3px; }
+  .match-py { font-family: "Andika", "Noto Sans SC", sans-serif; font-size: clamp(15px, 3.5vw, 22px); letter-spacing: 1px; line-height: 1.5; }
+  .match-meaning { font-family: "Noto Sans Thai", "Noto Sans SC", sans-serif; font-size: clamp(13px, 3vw, 18px); color: #7f5af0; line-height: 1.5; }
+  .match-done, .dict-done {
+    display: none; background: #fff; border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 36px 24px; text-align: center; margin-top: 16px;
+  }
+  .match-done h2, .dict-done h2 { font-size: 26px; color: var(--primary); }
+  .result-grid { display: flex; justify-content: center; gap: 28px; margin: 18px 0; flex-wrap: wrap; }
+  .ritem { text-align: center; }
+  .rnum { font-size: 30px; font-weight: 700; }
+  .rlabel { font-size: 13px; color: var(--text-light); margin-top: 3px; }
+  .rnum.time-color { color: var(--accent); }
+  .rnum.ok-color { color: #27ae60; }
+  .rnum.err-color { color: #c0392b; }
+  .btn-match-restart, .btn-dict-restart {
+    margin-top: 14px; padding: 10px 28px; border: none; border-radius: 10px;
+    background: var(--primary); color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-match-restart:hover, .btn-dict-restart:hover { background: var(--primary-light); }
+  .dict-card {
+    background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 36px 24px; text-align: center; position: relative;
+  }
+  .dict-progress { font-size: 14px; color: var(--text-light); margin-bottom: 16px; font-weight: 600; }
+  .dict-play-btn {
+    width: 80px; height: 80px; border-radius: 50%; border: none;
+    background: linear-gradient(135deg, #2980b9, #3498db); color: #fff;
+    font-size: 36px; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(41,128,185,0.35);
+    transition: transform .15s, box-shadow .15s; margin-bottom: 8px;
+  }
+  .dict-play-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(41,128,185,0.45); }
+  .dict-play-btn:active { transform: scale(0.95); }
+  .dict-play-hint { font-size: 13px; color: var(--text-light); margin-bottom: 20px; }
+  .dict-input-row { display: flex; gap: 10px; justify-content: center; align-items: center; }
+  .dict-input {
+    width: 240px; padding: 12px 16px; border: 2.5px solid var(--border);
+    border-radius: 12px; font-size: 28px; text-align: center; outline: none;
+    transition: border-color .2s;
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  }
+  .dict-input:focus { border-color: var(--accent); }
+  .dict-input.correct { border-color: #27ae60; background: #eafaf1; }
+  .dict-input.wrong { border-color: #c0392b; background: #fdecea; animation: shake .35s ease; }
+  .dict-submit-btn {
+    padding: 12px 20px; border: none; border-radius: 12px;
+    background: var(--primary); color: #fff; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+  }
+  .dict-submit-btn:hover { background: var(--primary-light); }
+  .dict-skip-btn {
+    padding: 10px 16px; border: 1.5px solid var(--border); border-radius: 12px;
+    background: #fff; color: var(--text-mid); font-size: 14px;
+    cursor: pointer; transition: background .15s; margin-top: 12px;
+  }
+  .dict-skip-btn:hover { background: #f0f0f0; }
+  .dict-answer-reveal { margin-top: 12px; font-size: 18px; font-weight: 700; min-height: 28px; }
+  .dict-answer-reveal .answer-hz { color: var(--primary); letter-spacing: 3px; }
+  .dict-answer-reveal .answer-py { color: var(--text-light); font-size: 15px; margin-left: 8px; }
+  .dict-wrong-list { margin-top: 16px; text-align: left; max-height: 200px; overflow-y: auto; }
+  .dict-wrong-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 15px;
+  }
+  .dict-wrong-item:last-child { border-bottom: none; }
+  .dict-wrong-item .whz { font-weight: 700; color: var(--primary); font-size: 20px; }
+  .dict-wrong-item .wpy { color: var(--text-light); font-size: 13px; }
+  .dict-wrong-item .wme { font-family: "Noto Sans Thai", "Noto Sans SC", sans-serif; color: #7f5af0; font-size: 14px; }
+  .btn-dict-retry {
+    margin-top: 8px; padding: 10px 28px; border: 2px solid var(--primary);
+    border-radius: 10px; background: transparent; color: var(--primary);
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s;
+  }
+  .btn-dict-retry:hover { background: var(--primary); color: #fff; }
+  .btn-submit-score {
+    margin-top: 14px; padding: 10px 28px; border: none; border-radius: 10px;
+    background: #27ae60; color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-submit-score:hover { background: #219a52; }
+  .btn-continue-round {
+    margin-top: 8px; padding: 10px 28px; border: 2px solid var(--accent);
+    border-radius: 10px; background: transparent; color: var(--accent);
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s;
+  }
+  .btn-continue-round:hover { background: var(--accent); color: #fff; }
+  .session-summary {
+    background: #f0f7ff; border-radius: 12px; padding: 12px 16px;
+    margin: 14px 0 6px; font-size: 14px; color: var(--text-mid); line-height: 1.8;
+  }
+  .session-summary strong { color: var(--text-dark); }
+  .submit-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45); z-index: 9999;
+    justify-content: center; align-items: center;
+  }
+  .submit-overlay.open { display: flex; }
+  .submit-modal {
+    background: #fff; border-radius: 18px; padding: 32px 28px;
+    width: 90%; max-width: 380px; box-shadow: 0 16px 48px rgba(0,0,0,0.2); text-align: center;
+  }
+  .submit-modal h3 { font-size: 20px; color: var(--primary); margin-bottom: 16px; }
+  .submit-modal input {
+    width: 100%; padding: 12px 14px; border: 2px solid var(--border);
+    border-radius: 10px; font-size: 18px; text-align: center; outline: none; margin-bottom: 16px;
+  }
+  .submit-modal input:focus { border-color: var(--accent); }
+  .submit-modal .modal-btns { display: flex; gap: 10px; justify-content: center; }
+  .submit-modal .modal-btns button {
+    padding: 10px 24px; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: background .2s;
+  }
+  .submit-modal .btn-confirm { background: #27ae60; color: #fff; }
+  .submit-modal .btn-confirm:hover { background: #219a52; }
+  .submit-modal .btn-cancel { background: #eee; color: var(--text-mid); }
+  .submit-modal .btn-cancel:hover { background: #ddd; }
+  .submit-modal .submit-status { margin-top: 12px; font-size: 14px; min-height: 20px; }
+  .submit-modal .submit-status.ok { color: #27ae60; }
+  .submit-modal .submit-status.err { color: #c0392b; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); font-size: 15px; }
+  .editor-toggle { width: 100%; max-width: 760px; padding: 18px 18px 0; text-align: center; }
+  .btn-editor {
+    border: 1.5px dashed #bbb; background: transparent; border-radius: 10px;
+    padding: 8px 22px; font-size: 14px; color: var(--text-light);
+    cursor: pointer; transition: all .2s;
+  }
+  .btn-editor:hover { border-color: var(--primary); color: var(--primary); }
+  .editor-panel { width: 100%; max-width: 760px; margin: 14px 0 0; padding: 0 18px; display: none; }
+  .editor-panel.open { display: block; }
+  .editor-inner {
+    background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px;
+  }
+  .editor-inner h3 { font-size: 16px; color: var(--text-dark); margin-bottom: 8px; }
+  .editor-inner p { font-size: 13px; color: var(--text-light); margin-bottom: 12px; line-height: 1.7; }
+  .lesson-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .lesson-tab {
+    border: 1.5px solid var(--border); border-radius: 20px; padding: 5px 14px;
+    font-size: 13px; background: #fff; cursor: pointer; color: var(--text-mid); transition: all .15s;
+  }
+  .lesson-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-add-lesson {
+    border: 1.5px dashed #bbb; border-radius: 20px; padding: 5px 14px;
+    font-size: 13px; background: transparent; color: #aaa; cursor: pointer;
+  }
+  .btn-add-lesson:hover { border-color: var(--primary); color: var(--primary); }
+  .lesson-name-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .lesson-name-row input {
+    flex: 1; border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 7px 12px; font-size: 14px; outline: none;
+  }
+  .lesson-name-row input:focus { border-color: var(--primary); }
+  .btn-del-lesson {
+    border: 1.5px solid #e74c3c; border-radius: 8px; padding: 7px 14px;
+    font-size: 13px; background: transparent; color: #e74c3c; cursor: pointer;
+  }
+  textarea.word-input {
+    width: 100%; min-height: 180px; border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 12px; font-size: 14px;
+    font-family: "Courier New", monospace; line-height: 1.8;
+    resize: vertical; outline: none; color: var(--text-dark);
+  }
+  textarea.word-input:focus { border-color: var(--primary); }
+  .editor-actions { display: flex; gap: 10px; margin-top: 12px; justify-content: flex-end; }
+  .btn-save {
+    border: none; border-radius: 8px; padding: 9px 26px; font-size: 14px;
+    font-weight: 700; background: var(--primary); color: #fff; cursor: pointer;
+  }
+  .btn-save:hover { background: var(--primary-light); }
+  .save-tip { font-size: 13px; color: #27ae60; align-self: center; display: none; }
+  .io-bar { display: flex; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #eee; }
+  .io-bar button {
+    flex: 1; border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 10px 0; font-size: 14px; font-weight: 600; cursor: pointer;
+    background: #fff; color: var(--text-dark); transition: all .18s;
+  }
+  .io-bar .btn-export { border-color: var(--accent); color: var(--accent); }
+  .io-bar .btn-export:hover { background: var(--accent); color: #fff; }
+  .io-bar .btn-import { border-color: #27ae60; color: #27ae60; }
+  .io-bar .btn-import:hover { background: #27ae60; color: #fff; }
+  .import-tip { font-size: 12px; color: #e67e22; margin-top: 6px; text-align: center; display: none; }
+  @media (max-width: 480px) {
+    .card-hanzi { font-size: 56px; } .card-pinyin { font-size: 26px; } .card-meaning { font-size: 16px; }
+    .match-card { padding: 9px 6px; min-height: 50px; }
+    .match-hz { font-size: 20px; } .match-py { font-size: 13px; } .match-meaning { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="main-mode-toggle">
+      <button id="mainFlash" class="on" onclick="switchMainMode('flash')">&#127199; 闪卡练习</button>
+      <button id="mainMatch" onclick="switchMainMode('match')">&#128279; 配对练习</button>
+      <button id="mainDict" onclick="switchMainMode('dict')">&#9999;&#65039; 听写练习</button>
+    </div>
+    <select id="lessonSelect"></select>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" id="flashControls">
+    <div class="mode-toggle">
+      <button id="modeHz" class="on" onclick="setCardMode('hz')">汉字→拼音</button>
+      <button id="modePy" onclick="setCardMode('py')">拼音→汉字</button>
+    </div>
+    <div class="mode-toggle">
+      <button id="modeClass" onclick="setUseMode('class')">课堂</button>
+      <button id="modeSelf" class="on" onclick="setUseMode('self')">自学</button>
+    </div>
+  </div>
+</div>
+
+<div id="flashArea" style="width:100%;display:flex;flex-direction:column;align-items:center">
+  <div class="progress-wrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-text" id="progressText">0 / 0</div>
+  </div>
+  <div class="card-scene" id="cardScene" onclick="flipCard()">
+    <div class="card-wrapper" id="cardWrapper">
+      <div class="card-face card-front" id="cardFront">
+        <div class="empty-state">请在下方教师模式中添加词单</div>
+      </div>
+      <div class="card-face card-back" id="cardBack"></div>
+    </div>
+  </div>
+  <div class="controls" id="controls">
+    <button class="btn-nav btn-prev" onclick="prevCard()">&#9664; 上一张</button>
+    <button class="btn-nav btn-flip" onclick="flipCard()">翻转</button>
+    <button class="btn-nav btn-next" onclick="nextCard()">下一张 &#9654;</button>
+  </div>
+  <div class="self-eval" id="selfEval">
+    <button class="btn-know" onclick="evalCard('know')">&#10003; 认识</button>
+    <button class="btn-fuzzy" onclick="evalCard('fuzzy')">&#9651; 模糊</button>
+    <button class="btn-dontknow" onclick="evalCard('dontknow')">&#10007; 不认识</button>
+  </div>
+  <div class="stats" id="statsArea">
+    <div class="stat-item stat-know"><div class="stat-num" id="statKnow">0</div><div class="stat-label">认识</div></div>
+    <div class="stat-item stat-fuzzy"><div class="stat-num" id="statFuzzy">0</div><div class="stat-label">模糊</div></div>
+    <div class="stat-item stat-dontknow"><div class="stat-num" id="statDontknow">0</div><div class="stat-label">不认识</div></div>
+    <div class="stat-item stat-remain"><div class="stat-num" id="statRemain">0</div><div class="stat-label">剩余</div></div>
+  </div>
+  <div class="done-banner" id="doneBanner">
+    <h2>&#127881; 本课完成！</h2>
+    <p id="doneMsg"></p>
+    <button class="btn-restart" onclick="restartLesson()">重新学习</button>
+  </div>
+</div>
+
+<div id="matchArea">
+  <div class="match-toolbar">
+    <label>配对方向：</label>
+    <div class="mode-toggle">
+      <button id="matchDirHz" class="on" onclick="setMatchDir('hz')">汉字↔拼音</button>
+      <button id="matchDirMe" onclick="setMatchDir('me')">汉字↔泰文</button>
+    </div>
+    <label style="margin-left:8px">每轮：</label>
+    <select id="matchSizeSelect" onchange="startMatch()">
+      <option value="8">8对</option>
+      <option value="12">12对</option>
+      <option value="0">全部</option>
+    </select>
+    <div class="match-timer" id="matchTimer">0:00</div>
+    <div class="match-score">
+      <span class="sc-ok">&#10003; <span id="matchOk">0</span></span>
+      <span class="sc-err">&#10007; <span id="matchErr">0</span></span>
+    </div>
+  </div>
+  <div class="match-columns">
+    <div class="match-col" id="matchLeft"></div>
+    <div class="match-col" id="matchRight"></div>
+  </div>
+  <div class="match-done" id="matchDone">
+    <h2>&#127881; 配对完成！</h2>
+    <div class="result-grid">
+      <div class="ritem"><div class="rnum time-color" id="resDuration">—</div><div class="rlabel">本轮用时</div></div>
+      <div class="ritem"><div class="rnum ok-color" id="resOk">—</div><div class="rlabel">正确</div></div>
+      <div class="ritem"><div class="rnum err-color" id="resErr">—</div><div class="rlabel">错误</div></div>
+      <div class="ritem"><div class="rnum" id="resAcc" style="color:var(--primary)">—</div><div class="rlabel">正确率</div></div>
+    </div>
+    <div class="session-summary" id="matchSessionSummary"></div>
+    <button class="btn-continue-round" onclick="continueMatchRound()">继续下一轮</button>
+    <button class="btn-submit-score" onclick="openSubmitModal('match')">&#128228; 提交成绩给老师</button>
+  </div>
+</div>
+
+<div id="dictArea">
+  <div class="dict-toolbar">
+    <label>每轮：</label>
+    <select id="dictSizeSelect" onchange="startDict()">
+      <option value="8">8个</option>
+      <option value="12">12个</option>
+      <option value="0">全部</option>
+    </select>
+    <div class="dict-timer" id="dictTimer">0:00</div>
+    <div class="dict-score">
+      <span class="sc-ok">&#10003; <span id="dictOk">0</span></span>
+      <span class="sc-err">&#10007; <span id="dictErr">0</span></span>
+    </div>
+  </div>
+  <div class="dict-card" id="dictCard">
+    <div class="dict-progress" id="dictProgress">第 1 / 10 个</div>
+    <button class="dict-play-btn" id="dictPlayBtn" onclick="playDictWord()">&#128266;</button>
+    <div class="dict-play-hint">点击播放发音</div>
+    <div class="dict-input-row">
+      <input type="text" class="dict-input" id="dictInput" placeholder="输入汉字" autocomplete="off" autocapitalize="off">
+      <button class="dict-submit-btn" id="dictSubmitBtn" onclick="submitDictAnswer()">提交</button>
+    </div>
+    <button class="dict-skip-btn" onclick="skipDictWord()">跳过 →</button>
+    <div class="dict-answer-reveal" id="dictAnswerReveal"></div>
+  </div>
+  <div class="dict-done" id="dictDone">
+    <h2>&#127881; 听写完成！</h2>
+    <div class="result-grid">
+      <div class="ritem"><div class="rnum time-color" id="dictResDuration">—</div><div class="rlabel">用时</div></div>
+      <div class="ritem"><div class="rnum ok-color" id="dictResOk">—</div><div class="rlabel">正确</div></div>
+      <div class="ritem"><div class="rnum err-color" id="dictResErr">—</div><div class="rlabel">错误</div></div>
+      <div class="ritem"><div class="rnum" id="dictResAcc" style="color:var(--primary)">—</div><div class="rlabel">正确率</div></div>
+    </div>
+    <div class="dict-wrong-list" id="dictWrongList"></div>
+    <div class="session-summary" id="dictSessionSummary"></div>
+    <button class="btn-continue-round" onclick="continueDictRound()">继续下一轮</button>
+    <button class="btn-submit-score" onclick="openSubmitModal('dict')">&#128228; 提交成绩给老师</button>
+    <button class="btn-dict-retry" id="dictRetryBtn" onclick="retryWrongWords()" style="display:none;margin-top:8px">错词重练</button>
+  </div>
+</div>
+
+<div class="submit-overlay" id="submitOverlay">
+  <div class="submit-modal">
+    <h3>&#128228; 提交成绩</h3>
+    <p style="font-size:14px;color:var(--text-mid);margin-bottom:14px" id="submitModalInfo"></p>
+    <input type="text" id="submitNameInput" placeholder="请输入你的姓名" maxlength="20">
+    <div class="modal-btns">
+      <button class="btn-confirm" onclick="confirmSubmitScore()">&#128228; 提交成绩</button>
+      <button class="btn-cancel" onclick="closeSubmitModal()">取消</button>
+    </div>
+    <div class="submit-status" id="submitStatus"></div>
+  </div>
+</div>
+
+<div class="editor-toggle" id="editorToggle">
+  <button class="btn-editor" onclick="toggleEditor()">&#128221; 编辑词单（教师模式）</button>
+</div>
+
+<div class="editor-panel" id="editorPanel">
+  <div class="editor-inner">
+    <h3>&#128218; 词单管理（教师专用）</h3>
+    <p>
+      每行一个词，格式：<code>汉字 | 拼音 | 泰文</code><br>
+      拼音请带声调符号，例如 <code>nǐ hǎo</code>。<br>
+      可选第4列：<code>汉字 | 拼音 | 泰文 | 搭配/例句</code><br>
+      声调颜色：<span class="t1">一声</span>　<span class="t2">二声</span>　<span class="t3">三声</span>　<span class="t4">四声</span>　<span class="t5">轻声</span><br>
+      <strong style="color:var(--primary)">编辑完成后请点「导出备份」保存到本地</strong>
+    </p>
+    <div class="lesson-tabs" id="lessonTabs"></div>
+    <div class="lesson-name-row">
+      <input type="text" id="lessonNameInput" placeholder="课程名称，例如：第1课">
+      <button class="btn-del-lesson" onclick="deleteCurrentLesson()">删除本课</button>
+    </div>
+    <textarea class="word-input" id="wordInput" placeholder="你好 | nǐ hǎo | สวัสดี&#10;谢谢 | xiè xie | ขอบคุณ&#10;老师 | lǎo shī | อาจารย์, ครู"></textarea>
+    <div class="editor-actions">
+      <span class="save-tip" id="saveTip">&#10003; 已保存</span>
+      <button class="btn-save" onclick="saveCurrentLesson()">保存词单</button>
+      <button class="btn-add-lesson" onclick="addLesson()" style="border-radius:8px;padding:9px 14px;">+ 新增课</button>
+    </div>
+    <div class="io-bar">
+      <button class="btn-export" onclick="exportData()">&#128228; 导出备份</button>
+      <button class="btn-import" onclick="document.getElementById('importFile').click()">&#128229; 导入恢复</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <div class="import-tip" id="importTip"></div>
+  </div>
+</div>
+
+<div style="height:40px"></div>
+
+<script>
+// ==================== 翻译语言设置 ====================
+// 修改 MEANING_LABEL 来改变配对/释义相关的标签文字
+const MEANING_LABEL = '泰文';
+
+// ==================== 词库数据 ====================
+const STORAGE_KEY_LESSONS = 'hz_cards_lessons_v2';
+const STORAGE_KEY_STATE = 'hz_cards_state_v2';
+
+// 从 localStorage 加载词库，如果没有则使用空数据
+function loadLessons() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LESSONS);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch(e) {}
+  // 默认第1课词汇（泰文翻译）
+  return [
+    { name: '第1课', words: [
+      { hz: '弟弟', py: 'dìdi', me: 'น้องชาย' },
+      { hz: '学生', py: 'xuésheng', me: 'นักเรียน' },
+      { hz: '他', py: 'tā', me: 'เขา' },
+      { hz: '见面', py: 'jiànmiàn', me: 'เจอกัน, พบ' },
+      { hz: '您', py: 'nín', me: 'ท่าน, คุณ' },
+      { hz: '不', py: 'bù', me: 'ไม่' },
+      { hz: '好', py: 'hǎo', me: 'ดี' },
+      { hz: '王方', py: 'Wáng Fāng', me: 'หวังฟาง' },
+      { hz: '应该', py: 'yīnggāi', me: 'ควร, ควรจะ' },
+      { hz: '专有名词', py: 'zhuānyǒu míngcí', me: 'ชื่อเฉพาะ' },
+      { hz: '叫', py: 'jiào', me: 'เรียก, ชื่อว่า' },
+      { hz: '老师', py: 'lǎoshī', me: 'อาจารย์, ครู' },
+      { hz: '不客气', py: 'bú kèqi', me: 'ไม่เป็นไร' },
+      { hz: '王平', py: 'Wáng Píng', me: 'หวังผิง' },
+      { hz: '请问', py: 'qǐngwèn', me: 'ขอถามว่า' },
+      { hz: '吗', py: 'ma', me: 'ไหม' },
+      { hz: '谢谢', py: 'xièxie', me: 'ขอบคุณ' },
+      { hz: '可以', py: 'kěyǐ', me: 'ได้, สามารถ' },
+      { hz: '怎么', py: 'zěnme', me: 'อย่างไร' },
+      { hz: '的', py: 'de', me: 'ของ' },
+      { hz: '是', py: 'shì', me: 'ใช่, คือ, เป็น' },
+      { hz: '法师', py: 'fǎshī', me: 'พระอาจารย์' },
+      { hz: '释和光', py: 'Shì Héguāng', me: 'ซื่อเหอกวาง' },
+      { hz: '我', py: 'wǒ', me: 'ผม, ฉัน' },
+      { hz: '你', py: 'nǐ', me: 'เธอ, คุณ' },
+      { hz: '称呼', py: 'chēnghu', me: 'เรียก, คำสรรพนามเรียก' }
+    ] }
+  ];
+}
+
+function saveLessons(lessons) {
+  localStorage.setItem(STORAGE_KEY_LESSONS, JSON.stringify(lessons));
+}
+
+let LESSONS = loadLessons();
+
+// ==================== 状态加载/保存 ====================
+function loadState() {
+  try {
+    const r = localStorage.getItem(STORAGE_KEY_STATE);
+    return r ? JSON.parse(r) : null;
+  } catch { return null; }
+}
+function saveState(s) { localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(s)); }
+
+let currentLessonIdx = 0;
+const _st = loadState();
+if (_st && typeof _st.lessonIdx === 'number') {
+  currentLessonIdx = _st.lessonIdx;
+  if (currentLessonIdx >= LESSONS.length) currentLessonIdx = 0;
+}
+
+// ==================== 主模式 ====================
+let mainMode = 'flash';
+
+function switchMainMode(m) {
+  mainMode = m;
+  document.getElementById('mainFlash').classList.toggle('on', m === 'flash');
+  document.getElementById('mainMatch').classList.toggle('on', m === 'match');
+  document.getElementById('mainDict').classList.toggle('on', m === 'dict');
+  document.getElementById('flashArea').style.display = m === 'flash' ? 'flex' : 'none';
+  document.getElementById('matchArea').style.display = m === 'match' ? 'block' : 'none';
+  document.getElementById('dictArea').style.display = m === 'dict' ? 'block' : 'none';
+  document.getElementById('flashControls').style.display = m === 'flash' ? 'flex' : 'none';
+  if (m === 'match') { resetSession('match'); startMatch(); }
+  if (m === 'dict') { resetSession('dict'); startDict(); }
+}
+
+// ==================== 状态（闪卡） ====================
+let cardMode = 'hz';
+let useMode = 'self';
+let deck = [];
+let deckPos = 0;
+let isFlipped = false;
+let stats = { know: 0, fuzzy: 0, dontknow: 0 };
+let selfEvalVisible = false;
+
+// ==================== 拼音声调染色 ====================
+const TONE_MAP = {
+  'āáǎà': [1,2,3,4], 'ēéěè': [1,2,3,4],
+  'īíǐì': [1,2,3,4], 'ōóǒò': [1,2,3,4],
+  'ūúǔù': [1,2,3,4], 'ǖǘǚǜ': [1,2,3,4]
+};
+function getToneNumber(c) {
+  for (const [chars, tones] of Object.entries(TONE_MAP)) {
+    const idx = [...chars].indexOf(c);
+    if (idx >= 0) return tones[idx];
+  }
+  return 0;
+}
+function detectSyllableTone(syl) {
+  for (const ch of syl) { const t = getToneNumber(ch); if (t > 0) return t; }
+  return 5;
+}
+function colorPinyin(py) {
+  if (!py) return '';
+  return py.split(' ').map(syl => {
+    const tone = detectSyllableTone(syl);
+    return tone === 0 ? syl : `<span class="t${tone}">${syl}</span>`;
+  }).join(' ');
+}
+
+// ==================== 词单解析 ====================
+function parseWords(text) {
+  return text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'))
+    .map(l => {
+      const p = l.split('|').map(s => s.trim());
+      if (p.length >= 4) return { hz: p[0], py: p[1], me: p[2], ex: p[3] };
+      if (p.length === 3) return { hz: p[0], py: p[1], me: p[2] };
+      if (p.length === 2) return { hz: p[0], py: p[1], me: '' };
+      return null;
+    }).filter(Boolean);
+}
+function wordsToText(words) { return words.map(w => {
+  if (w.ex) return `${w.hz} | ${w.py} | ${w.me || ''} | ${w.ex}`;
+  return `${w.hz} | ${w.py} | ${w.me || ''}`;
+}).join('\n'); }
+
+// ==================== 课程 ====================
+function currentLesson() { return LESSONS[currentLessonIdx] || { name: '', words: [] }; }
+
+function buildLessonSelect() {
+  const sel = document.getElementById('lessonSelect');
+  sel.innerHTML = '';
+  LESSONS.forEach((l, i) => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = l.name;
+    if (i === currentLessonIdx) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+document.getElementById('lessonSelect').addEventListener('change', function() {
+  currentLessonIdx = parseInt(this.value);
+  saveState({ lessonIdx: currentLessonIdx });
+  resetSession('match'); resetSession('dict');
+  if (mainMode === 'flash') initDeck();
+  else if (mainMode === 'match') startMatch();
+  else if (mainMode === 'dict') startDict();
+});
+
+// ==================== 闪卡初始化 ====================
+function initDeck() {
+  const words = currentLesson().words;
+  deck = [...words];
+  shuffleDeck();
+  deckPos = 0; isFlipped = false;
+  stats = { know: 0, fuzzy: 0, dontknow: 0 };
+  updateStats();
+  document.getElementById('doneBanner').style.display = 'none';
+  document.getElementById('cardScene').style.display = '';
+  document.getElementById('controls').style.display = '';
+  renderCard(); updateProgress();
+}
+function shuffleDeck() {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
+
+// ==================== 渲染闪卡 ====================
+function renderCard() {
+  const front = document.getElementById('cardFront');
+  const back = document.getElementById('cardBack');
+  const wrapper = document.getElementById('cardWrapper');
+  wrapper.classList.remove('flipped');
+  isFlipped = false; selfEvalVisible = false; updateSelfEval();
+  if (deck.length === 0) {
+    front.innerHTML = '<div class="empty-state">本课暂无词汇<br><small>请在教师模式中添加</small></div>';
+    back.innerHTML = ''; return;
+  }
+  if (deckPos >= deck.length) { showDone(); return; }
+  const word = deck[deckPos];
+  const pyColored = colorPinyin(word.py);
+  const meaningHtml = word.me ? `<div class="card-meaning">${word.me}</div>` : '';
+  const exHtml = word.ex ? `<div class="card-example"><span class="card-example-label">搭配：</span>${word.ex}</div>` : '';
+  if (cardMode === 'hz') {
+    front.innerHTML = `<div class="card-hanzi">${word.hz}</div><div class="card-tap-hint">点击翻转</div>`;
+    back.innerHTML = `
+      <div class="card-hanzi" style="font-size:clamp(60px,12vw,100px)">${word.hz}</div>
+      <div class="card-pinyin" style="font-size:clamp(44px,10vw,78px)">${pyColored}</div>
+      ${meaningHtml}
+      ${exHtml}`;
+  } else {
+    front.innerHTML = `<div class="card-pinyin" style="font-size:clamp(42px,10vw,80px)">${pyColored}</div><div class="card-tap-hint">点击翻转</div>`;
+    back.innerHTML = `
+      <div class="card-hanzi">${word.hz}</div>
+      <div class="card-pinyin">${pyColored}</div>
+      ${meaningHtml}
+      ${exHtml}`;
+  }
+}
+
+function flipCard() {
+  if (deck.length === 0 || deckPos >= deck.length) return;
+  const wrapper = document.getElementById('cardWrapper');
+  isFlipped = !isFlipped;
+  wrapper.classList.toggle('flipped', isFlipped);
+  if (isFlipped) { selfEvalVisible = true; updateSelfEval(); }
+}
+function nextCard() {
+  if (deck.length === 0) return;
+  if (deckPos < deck.length - 1) deckPos++;
+  else { if (useMode === 'class') deckPos = 0; else { showDone(); return; } }
+  renderCard(); updateProgress();
+}
+function prevCard() {
+  if (deck.length === 0) return;
+  if (deckPos > 0) deckPos--;
+  renderCard(); updateProgress();
+}
+function evalCard(result) {
+  if (!isFlipped) return;
+  stats[result]++;
+  if (result === 'dontknow' || result === 'fuzzy') deck.push(deck[deckPos]);
+  deckPos++; renderCard(); updateProgress(); updateStats();
+}
+function updateSelfEval() {
+  const se = document.getElementById('selfEval');
+  se.style.display = (useMode === 'self' && selfEvalVisible && deck.length > 0 && deckPos < deck.length) ? 'flex' : 'none';
+}
+function updateProgress() {
+  const total = currentLesson().words.length;
+  const done = Math.min(deckPos, total);
+  const pct = total > 0 ? (done / total) * 100 : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${done} / ${total}`;
+  document.getElementById('statRemain').textContent = Math.max(0, deck.length - deckPos);
+}
+function updateStats() {
+  document.getElementById('statKnow').textContent = stats.know;
+  document.getElementById('statFuzzy').textContent = stats.fuzzy;
+  document.getElementById('statDontknow').textContent = stats.dontknow;
+}
+function showDone() {
+  document.getElementById('doneBanner').style.display = 'block';
+  document.getElementById('cardScene').style.display = 'none';
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('selfEval').style.display = 'none';
+  document.getElementById('doneMsg').textContent =
+    `本课共 ${currentLesson().words.length} 个词　认识 ${stats.know} 个　模糊 ${stats.fuzzy} 个　不认识 ${stats.dontknow} 个`;
+}
+function restartLesson() { initDeck(); }
+function setCardMode(m) {
+  cardMode = m;
+  document.getElementById('modeHz').classList.toggle('on', m === 'hz');
+  document.getElementById('modePy').classList.toggle('on', m === 'py');
+  renderCard();
+}
+function setUseMode(m) {
+  useMode = m;
+  document.getElementById('modeClass').classList.toggle('on', m === 'class');
+  document.getElementById('modeSelf').classList.toggle('on', m === 'self');
+  const isSelf = m === 'self';
+  document.getElementById('statsArea').style.display = isSelf ? 'flex' : 'none';
+  updateSelfEval();
+}
+
+// ==================== 配对练习 ====================
+let matchDir = 'hz';
+let matchWords = [];
+let matchSelected = null;
+let matchOkCount = 0;
+let matchErrCount = 0;
+let matchStartTime = null;
+let matchTimerInterval = null;
+let matchDone = false;
+
+function setMatchDir(d) {
+  matchDir = d;
+  document.getElementById('matchDirHz').classList.toggle('on', d === 'hz');
+  document.getElementById('matchDirMe').classList.toggle('on', d === 'me');
+  startMatch();
+}
+
+function startMatch() {
+  clearInterval(matchTimerInterval);
+  document.getElementById('matchDone').style.display = 'none';
+  document.getElementById('matchTimer').textContent = '0:00';
+  matchOkCount = 0; matchErrCount = 0;
+  document.getElementById('matchOk').textContent = '0';
+  document.getElementById('matchErr').textContent = '0';
+  matchSelected = null; matchDone = false;
+
+  const words = currentLesson().words;
+  if (words.length === 0) {
+    document.getElementById('matchLeft').innerHTML = '<div class="empty-state" style="padding:30px">本课暂无词汇</div>';
+    document.getElementById('matchRight').innerHTML = '';
+    return;
+  }
+
+  const sizeVal = parseInt(document.getElementById('matchSizeSelect').value);
+  let pool = [...words];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  matchWords = sizeVal === 0 ? pool : pool.slice(0, Math.min(sizeVal, pool.length));
+
+  const leftOrder = shuffle([...matchWords.keys()]);
+  const rightOrder = shuffle([...matchWords.keys()]);
+
+  renderMatchColumns(leftOrder, rightOrder);
+
+  matchStartTime = Date.now();
+  matchTimerInterval = setInterval(updateMatchTimer, 500);
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderMatchColumns(leftOrder, rightOrder) {
+  const leftEl = document.getElementById('matchLeft');
+  const rightEl = document.getElementById('matchRight');
+  leftEl.innerHTML = ''; rightEl.innerHTML = '';
+
+  leftOrder.forEach(idx => {
+    const w = matchWords[idx];
+    const el = document.createElement('div');
+    el.className = 'match-card';
+    el.dataset.idx = idx; el.dataset.side = 'left';
+    el.innerHTML = `<span class="match-hz">${w.hz}</span>`;
+    el.onclick = () => onMatchClick(el);
+    leftEl.appendChild(el);
+  });
+
+  rightOrder.forEach(idx => {
+    const w = matchWords[idx];
+    const el = document.createElement('div');
+    el.className = 'match-card';
+    el.dataset.idx = idx; el.dataset.side = 'right';
+    if (matchDir === 'hz') {
+      el.innerHTML = `<span class="match-py">${colorPinyin(w.py)}</span>`;
+    } else {
+      el.innerHTML = `<span class="match-meaning">${w.me || ''}</span>`;
+    }
+    el.onclick = () => onMatchClick(el);
+    rightEl.appendChild(el);
+  });
+}
+
+function onMatchClick(el) {
+  if (matchDone) return;
+  if (el.classList.contains('matched') || el.classList.contains('disabled')) return;
+
+  const side = el.dataset.side;
+  const idx = parseInt(el.dataset.idx);
+
+  if (matchSelected && matchSelected.side === side) {
+    matchSelected.el.classList.remove('selected');
+    if (matchSelected.el === el) { matchSelected = null; return; }
+    el.classList.add('selected');
+    matchSelected = { side, idx, el };
+    return;
+  }
+
+  if (!matchSelected) {
+    el.classList.add('selected');
+    matchSelected = { side, idx, el };
+    return;
+  }
+
+  const other = matchSelected;
+  el.classList.add('selected');
+
+  if (other.idx === idx) {
+    el.classList.remove('selected'); other.el.classList.remove('selected');
+    el.classList.add('matched'); other.el.classList.add('matched');
+    matchOkCount++;
+    document.getElementById('matchOk').textContent = matchOkCount;
+    matchSelected = null;
+    checkMatchComplete();
+  } else {
+    matchErrCount++;
+    document.getElementById('matchErr').textContent = matchErrCount;
+    el.classList.add('error'); other.el.classList.add('error');
+    setTimeout(() => {
+      el.classList.remove('selected', 'error');
+      other.el.classList.remove('selected', 'error');
+    }, 600);
+    matchSelected = null;
+  }
+}
+
+function checkMatchComplete() {
+  const total = matchWords.length;
+  if (matchOkCount >= total) {
+    matchDone = true;
+    clearInterval(matchTimerInterval);
+    const elapsed = Math.round((Date.now() - matchStartTime) / 1000);
+    const totalAll = matchOkCount + matchErrCount;
+    const acc = totalAll > 0 ? Math.round(matchOkCount / totalAll * 100) : 0;
+    document.getElementById('resDuration').textContent = formatTime(elapsed);
+    document.getElementById('resOk').textContent = matchOkCount;
+    document.getElementById('resErr').textContent = matchErrCount;
+    document.getElementById('resAcc').textContent = acc + '%';
+    accumulateRound('match', matchOkCount, matchErrCount, elapsed, []);
+    renderSessionSummary('match');
+    document.getElementById('matchDone').style.display = 'block';
+  }
+}
+
+function updateMatchTimer() {
+  if (!matchStartTime) return;
+  const elapsed = Math.round((Date.now() - matchStartTime) / 1000);
+  document.getElementById('matchTimer').textContent = formatTime(elapsed);
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+// ==================== 听写练习 ====================
+let dictWords = [];
+let dictPos = 0;
+let dictOkCount = 0;
+let dictErrCount = 0;
+let dictWrongWords = [];
+let dictStartTime = null;
+let dictTimerInterval = null;
+let dictDone = false;
+let dictLocked = false;
+let dictRetryMode = false;
+
+function startDict(retryWords) {
+  clearInterval(dictTimerInterval);
+  document.getElementById('dictDone').style.display = 'none';
+  document.getElementById('dictCard').style.display = 'block';
+  document.getElementById('dictTimer').textContent = '0:00';
+  dictOkCount = 0; dictErrCount = 0;
+  dictWrongWords = [];
+  dictLocked = false; dictDone = false;
+  document.getElementById('dictOk').textContent = '0';
+  document.getElementById('dictErr').textContent = '0';
+  document.getElementById('dictAnswerReveal').innerHTML = '';
+
+  const words = currentLesson().words;
+  if (words.length === 0) {
+    document.getElementById('dictCard').innerHTML = '<div style="padding:30px;color:var(--text-light)">本课暂无词汇</div>';
+    return;
+  }
+
+  if (retryWords && retryWords.length > 0) {
+    dictRetryMode = true;
+    dictWords = [...retryWords];
+  } else {
+    dictRetryMode = false;
+    const sizeVal = parseInt(document.getElementById('dictSizeSelect').value);
+    let pool = [...words];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    dictWords = sizeVal === 0 ? pool : pool.slice(0, Math.min(sizeVal, pool.length));
+  }
+
+  dictPos = 0;
+  dictStartTime = Date.now();
+  dictTimerInterval = setInterval(updateDictTimer, 500);
+  renderDictQuestion();
+}
+
+function renderDictQuestion() {
+  if (dictPos >= dictWords.length) {
+    finishDict();
+    return;
+  }
+  const w = dictWords[dictPos];
+  document.getElementById('dictProgress').textContent = `第 ${dictPos + 1} / ${dictWords.length} 个`;
+  document.getElementById('dictInput').value = '';
+  document.getElementById('dictInput').className = 'dict-input';
+  document.getElementById('dictInput').disabled = false;
+  document.getElementById('dictSubmitBtn').disabled = false;
+  document.getElementById('dictAnswerReveal').innerHTML = '';
+  dictLocked = false;
+  setTimeout(() => playWord(w.hz), 300);
+  setTimeout(() => document.getElementById('dictInput').focus(), 600);
+}
+
+function playDictWord() {
+  if (dictPos < dictWords.length) {
+    playWord(dictWords[dictPos].hz);
+  }
+}
+
+function playWord(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN';
+  u.rate = 0.75;
+  u.pitch = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const zhVoice = voices.find(v => v.lang.startsWith('zh'));
+  if (zhVoice) u.voice = zhVoice;
+  window.speechSynthesis.speak(u);
+}
+
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+}
+
+function submitDictAnswer() {
+  if (dictLocked || dictDone) return;
+  const input = document.getElementById('dictInput');
+  const userAnswer = input.value.trim();
+  if (!userAnswer) return;
+
+  const w = dictWords[dictPos];
+  const correct = userAnswer === w.hz;
+
+  dictLocked = true;
+  input.disabled = true;
+  document.getElementById('dictSubmitBtn').disabled = true;
+
+  if (correct) {
+    input.classList.add('correct');
+    dictOkCount++;
+    document.getElementById('dictOk').textContent = dictOkCount;
+    setTimeout(() => { dictPos++; renderDictQuestion(); }, 600);
+  } else {
+    input.classList.add('wrong');
+    dictErrCount++;
+    document.getElementById('dictErr').textContent = dictErrCount;
+    dictWrongWords.push(w);
+    document.getElementById('dictAnswerReveal').innerHTML =
+      `<span class="answer-hz">${w.hz}</span><span class="answer-py">${w.py}</span>`;
+    setTimeout(() => { dictPos++; renderDictQuestion(); }, 2000);
+  }
+}
+
+function skipDictWord() {
+  if (dictLocked || dictDone) return;
+  const w = dictWords[dictPos];
+  dictLocked = true;
+  dictErrCount++;
+  document.getElementById('dictErr').textContent = dictErrCount;
+  dictWrongWords.push(w);
+  document.getElementById('dictInput').classList.add('wrong');
+  document.getElementById('dictInput').disabled = true;
+  document.getElementById('dictSubmitBtn').disabled = true;
+  document.getElementById('dictAnswerReveal').innerHTML =
+    `<span class="answer-hz">${w.hz}</span><span class="answer-py">${w.py}</span>`;
+  setTimeout(() => { dictPos++; renderDictQuestion(); }, 2000);
+}
+
+function finishDict() {
+  dictDone = true;
+  clearInterval(dictTimerInterval);
+  document.getElementById('dictCard').style.display = 'none';
+
+  const elapsed = Math.round((Date.now() - dictStartTime) / 1000);
+  const total = dictOkCount + dictErrCount;
+  const acc = total > 0 ? Math.round(dictOkCount / total * 100) : 0;
+
+  document.getElementById('dictResDuration').textContent = formatTime(elapsed);
+  document.getElementById('dictResOk').textContent = dictOkCount;
+  document.getElementById('dictResErr').textContent = dictErrCount;
+  document.getElementById('dictResAcc').textContent = acc + '%';
+
+  const wrongListEl = document.getElementById('dictWrongList');
+  wrongListEl.innerHTML = '';
+  if (dictWrongWords.length > 0) {
+    dictWrongWords.forEach(w => {
+      const item = document.createElement('div');
+      item.className = 'dict-wrong-item';
+      const meaningPart = w.me ? `<span class="wme">${w.me}</span>` : '';
+      item.innerHTML = `<span class="whz">${w.hz}</span><span class="wpy">${w.py}</span>${meaningPart}`;
+      wrongListEl.appendChild(item);
+    });
+    document.getElementById('dictRetryBtn').style.display = dictRetryMode ? 'none' : 'inline-block';
+  } else {
+    wrongListEl.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:12px">全部正确！太棒了 &#127775;</div>';
+    document.getElementById('dictRetryBtn').style.display = 'none';
+  }
+
+  if (!dictRetryMode) {
+    accumulateRound('dict', dictOkCount, dictErrCount, elapsed, [...dictWrongWords]);
+  }
+  renderSessionSummary('dict');
+  document.getElementById('dictDone').style.display = 'block';
+}
+
+function retryWrongWords() {
+  if (dictWrongWords.length === 0) return;
+  startDict(dictWrongWords);
+}
+
+function updateDictTimer() {
+  if (!dictStartTime) return;
+  const elapsed = Math.round((Date.now() - dictStartTime) / 1000);
+  document.getElementById('dictTimer').textContent = formatTime(elapsed);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const dictInput = document.getElementById('dictInput');
+  if (dictInput) {
+    dictInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitDictAnswer();
+    });
+  }
+});
+
+// ==================== 累积统计 & 提交成绩 ====================
+let sessionData = {
+  match: { rounds: 0, totalOk: 0, totalErr: 0, totalTime: 0, allWrongWords: [], lessonName: '' },
+  dict:  { rounds: 0, totalOk: 0, totalErr: 0, totalTime: 0, allWrongWords: [], lessonName: '' }
+};
+let pendingSubmitType = '';
+
+function resetSession(type) {
+  const lessonName = currentLesson().name;
+  sessionData[type] = { rounds: 0, totalOk: 0, totalErr: 0, totalTime: 0, allWrongWords: [], lessonName: lessonName };
+}
+
+function accumulateRound(type, ok, err, elapsed, wrongWords) {
+  const s = sessionData[type];
+  s.lessonName = currentLesson().name;
+  s.rounds++;
+  s.totalOk += ok;
+  s.totalErr += err;
+  s.totalTime += elapsed;
+  wrongWords.forEach(w => {
+    if (!s.allWrongWords.find(x => x.hz === w.hz)) {
+      s.allWrongWords.push(w);
+    }
+  });
+}
+
+function renderSessionSummary(type) {
+  const s = sessionData[type];
+  const totalAll = s.totalOk + s.totalErr;
+  const accAll = totalAll > 0 ? Math.round(s.totalOk / totalAll * 100) : 0;
+  const elId = type === 'match' ? 'matchSessionSummary' : 'dictSessionSummary';
+  const el = document.getElementById(elId);
+  if (s.rounds <= 1) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = `&#128202; <strong>本次课程累计</strong>（第 ${s.rounds} 轮）：共 ${totalAll} 题，正确 ${s.totalOk}，错误 ${s.totalErr}，正确率 <strong>${accAll}%</strong>，总用时 ${formatTime(s.totalTime)}`;
+}
+
+function continueMatchRound() {
+  document.getElementById('matchDone').style.display = 'none';
+  startMatch();
+}
+
+function continueDictRound() {
+  document.getElementById('dictDone').style.display = 'none';
+  document.getElementById('dictCard').style.display = 'block';
+  startDict();
+}
+
+function openSubmitModal(type) {
+  pendingSubmitType = type;
+  const s = sessionData[type];
+  const totalAll = s.totalOk + s.totalErr;
+  const accAll = totalAll > 0 ? Math.round(s.totalOk / totalAll * 100) : 0;
+  const typeLabel = type === 'match' ? '配对练习' : '听写练习';
+  document.getElementById('submitModalInfo').textContent =
+    `${s.lessonName} · ${typeLabel} · ${s.rounds}轮 · 共${totalAll}题 · 正确率${accAll}%`;
+  document.getElementById('submitNameInput').value = localStorage.getItem('hz_student_name') || '';
+  document.getElementById('submitStatus').textContent = '';
+  document.getElementById('submitStatus').className = 'submit-status';
+  document.getElementById('submitOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('submitNameInput').focus(), 200);
+}
+
+function closeSubmitModal() {
+  document.getElementById('submitOverlay').classList.remove('open');
+}
+
+function confirmSubmitScore() {
+  const name = document.getElementById('submitNameInput').value.trim();
+  if (!name) {
+    document.getElementById('submitNameInput').style.borderColor = '#c0392b';
+    return;
+  }
+  document.getElementById('submitNameInput').style.borderColor = '';
+  localStorage.setItem('hz_student_name', name);
+
+  const type = pendingSubmitType;
+  const s = sessionData[type];
+  const totalAll = s.totalOk + s.totalErr;
+  const accAll = totalAll > 0 ? Math.round(s.totalOk / totalAll * 100) : 0;
+  const typeLabel = type === 'match' ? '配对练习' : '听写练习';
+  const wrongText = s.allWrongWords.map(w => w.hz).join('、') || '无';
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-CN');
+  const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  const timeFull = `${dateStr} ${timeStr}`;
+
+  const statusEl = document.getElementById('submitStatus');
+  statusEl.textContent = '提交中...';
+  statusEl.className = 'submit-status';
+
+  // 降级为剪贴板方案
+  const text = `汉语词卡练习成绩\n` +
+    `================\n` +
+    `姓名：${name}\n` +
+    `课程：${s.lessonName}\n` +
+    `练习：${typeLabel}\n` +
+    `轮次：${s.rounds} 轮\n` +
+    `题数：${totalAll} 题\n` +
+    `正确：${s.totalOk}\n` +
+    `错误：${s.totalErr}\n` +
+    `正确率：${accAll}%\n` +
+    `用时：${formatTime(s.totalTime)}\n` +
+    `${wrongText !== '无' ? '错词：' + wrongText + '\n' : ''}` +
+    `================\n` +
+    `${timeFull}`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      statusEl.innerHTML = '&#9989; 成绩已复制到剪贴板！<br><span style="font-size:12px;color:var(--text-light)">请粘贴发送给老师</span>';
+      statusEl.className = 'submit-status ok';
+    }).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    const statusEl = document.getElementById('submitStatus');
+    statusEl.innerHTML = '&#9989; 成绩已复制到剪贴板！<br><span style="font-size:12px;color:var(--text-light)">请粘贴发送给老师</span>';
+    statusEl.className = 'submit-status ok';
+  } catch (e) {
+    const statusEl = document.getElementById('submitStatus');
+    statusEl.innerHTML = '&#10060; 复制失败，请手动复制';
+    statusEl.className = 'submit-status err';
+  }
+  document.body.removeChild(ta);
+}
+
+// ==================== 词单编辑器 ====================
+let editorOpen = false;
+function toggleEditor() {
+  editorOpen = !editorOpen;
+  document.getElementById('editorPanel').classList.toggle('open', editorOpen);
+  if (editorOpen) { renderEditorTabs(); loadEditorContent(); }
+}
+function renderEditorTabs() {
+  const tabs = document.getElementById('lessonTabs');
+  tabs.innerHTML = '';
+  LESSONS.forEach((l, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'lesson-tab' + (i === currentLessonIdx ? ' active' : '');
+    btn.textContent = l.name;
+    btn.onclick = () => {
+      currentLessonIdx = i;
+      saveState({ lessonIdx: currentLessonIdx });
+      document.getElementById('lessonSelect').value = i;
+      renderEditorTabs(); loadEditorContent(); initDeck();
+    };
+    tabs.appendChild(btn);
+  });
+}
+function loadEditorContent() {
+  const lesson = currentLesson();
+  document.getElementById('lessonNameInput').value = lesson.name;
+  document.getElementById('wordInput').value = wordsToText(lesson.words);
+}
+function saveCurrentLesson() {
+  const name = document.getElementById('lessonNameInput').value.trim() || `第${currentLessonIdx+1}课`;
+  const text = document.getElementById('wordInput').value;
+  const words = parseWords(text);
+  LESSONS[currentLessonIdx] = { name, words };
+  saveLessons(LESSONS);
+  buildLessonSelect(); renderEditorTabs(); initDeck();
+  const tip = document.getElementById('saveTip');
+  tip.textContent = '✓ 已保存到浏览器本地';
+  tip.style.display = 'inline'; tip.style.color = '#27ae60';
+  setTimeout(() => { tip.style.display = 'none'; }, 3000);
+}
+function addLesson() {
+  LESSONS.push({ name: `第${LESSONS.length + 1}课`, words: [] });
+  currentLessonIdx = LESSONS.length - 1;
+  saveState({ lessonIdx: currentLessonIdx });
+  saveLessons(LESSONS);
+  buildLessonSelect(); renderEditorTabs(); loadEditorContent(); initDeck();
+}
+function deleteCurrentLesson() {
+  if (LESSONS.length <= 1) { alert('至少保留一课'); return; }
+  if (!confirm(`确定删除「${currentLesson().name}」吗？`)) return;
+  LESSONS.splice(currentLessonIdx, 1);
+  currentLessonIdx = Math.max(0, currentLessonIdx - 1);
+  saveState({ lessonIdx: currentLessonIdx });
+  saveLessons(LESSONS);
+  buildLessonSelect(); renderEditorTabs(); loadEditorContent(); initDeck();
+}
+
+// ==================== 导入导出 ====================
+function exportData() {
+  const obj = { lessons: LESSONS, currentLesson: currentLessonIdx, exportDate: new Date().toISOString().slice(0,10) };
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `汉语词卡词库_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function importData(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const tip = document.getElementById('importTip');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.lessons || !Array.isArray(data.lessons)) {
+        tip.textContent = '⚠️ 文件格式不正确'; tip.style.display = 'block'; return;
+      }
+      // 规范化词汇字段（兼容旧格式 th → me）
+      data.lessons.forEach(l => {
+        l.words = l.words.map(w => {
+          if (w.th && !w.me) w.me = w.th;
+          return { hz: w.hz || '', py: w.py || '', me: w.me || '', ex: w.ex || '' };
+        });
+      });
+      let wc = 0;
+      LESSONS = data.lessons;
+      data.lessons.forEach(l => { wc += l.words.length; });
+      currentLessonIdx = Math.min(data.currentLesson || 0, LESSONS.length - 1);
+      saveState({ lessonIdx: currentLessonIdx });
+      saveLessons(LESSONS);
+      buildLessonSelect(); renderEditorTabs(); loadEditorContent(); initDeck();
+      tip.textContent = `✓ 导入成功！共 ${data.lessons.length} 课 ${wc} 个词`;
+      tip.style.color = '#27ae60'; tip.style.display = 'block';
+      setTimeout(() => { tip.style.display = 'none'; tip.style.color = '#e67e22'; }, 5000);
+    } catch { tip.textContent = '⚠️ 读取失败'; tip.style.display = 'block'; }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ==================== 键盘快捷键 ====================
+document.addEventListener('keydown', e => {
+  if (mainMode !== 'flash') return;
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextCard(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); prevCard(); }
+  if (e.key === 'Enter' || e.key === 'f') flipCard();
+  if (e.key === '1') evalCard('know');
+  if (e.key === '2') evalCard('fuzzy');
+  if (e.key === '3') evalCard('dontknow');
+});
+
+// ==================== 教师模式检测 ====================
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('edit') || window.location.hash === '#edit') {
+  document.getElementById('editorToggle').style.display = 'block';
+}
+
+// ==================== 初始化 ====================
+// 初次使用时自动显示教师模式入口
+if (LESSONS.length === 0 || (LESSONS.length === 1 && LESSONS[0].words.length === 0)) {
+  document.getElementById('editorToggle').style.display = 'block';
+}
+
+buildLessonSelect();
+setUseMode('self');
+initDeck();
+</script>
+</body>
+</html>
