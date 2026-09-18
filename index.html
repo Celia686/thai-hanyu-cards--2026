@@ -927,7 +927,11 @@ function renderCard() {
   const front = document.getElementById('cardFront');
   const back = document.getElementById('cardBack');
   const wrapper = document.getElementById('cardWrapper');
+  // 切换卡片时先无动画瞬切回正面，避免下一张背面内容闪现
+  wrapper.style.transition = 'none';
   wrapper.classList.remove('flipped');
+  void wrapper.offsetWidth; // 强制 reflow，使无过渡状态立即生效
+  wrapper.style.transition = '';
   isFlipped = false; selfEvalVisible = false; updateSelfEval();
   if (deck.length === 0) {
     front.innerHTML = '<div class="empty-state">本课暂无词汇<br><small>请在教师模式中添加</small></div>';
