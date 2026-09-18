@@ -953,7 +953,25 @@ function renderCard() {
       ${meaningHtml}
       ${exHtml}`;
   }
+  fitHanziOneLine();
 }
+
+// 长汉字自动缩小到单行（避免换行）
+function fitHanziOneLine() {
+  document.querySelectorAll('.card-face .card-hanzi').forEach(function (el) {
+    el.style.whiteSpace = 'nowrap';
+    el.style.fontSize = '';
+    var fs = parseFloat(getComputedStyle(el).fontSize);
+    var avail = el.parentElement.clientWidth * 0.94;
+    var guard = 0;
+    while (el.scrollWidth > avail && fs > 18 && guard < 240) {
+      fs -= 2;
+      el.style.fontSize = fs + 'px';
+      guard++;
+    }
+  });
+}
+window.addEventListener('resize', fitHanziOneLine);
 
 function flipCard() {
   if (deck.length === 0 || deckPos >= deck.length) return;
